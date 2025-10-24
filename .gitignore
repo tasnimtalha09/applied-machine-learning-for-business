@@ -1,3 +1,6 @@
+# Video files
 *.mp4
+
+# Presentation files
 *.ppt
 *.pptx

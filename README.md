@@ -13,7 +13,7 @@ In [this project](Project%2001%20—%20Understanding%20&%20Explaining%20a%20Mach
 
 * **Goal:** To understand and explain the working of Naive Bayes algorithms in the context of spam detection.
 * **Dataset:** SMS Spam Collection Dataset from UCI Machine Learning Repository. Link to the dataset [here](https://archive.ics.uci.edu/dataset/228/sms+spam+collection).
-* **README**: The README.md file for this project can be found [here](Project%2001%20—%20Understanding%20&%20Explaining%20a%20Machine%20Learning%20Algorithm/README.md).
+* **README**: A detailed README.md file dedicated only for this project can be found [here](Project%2001%20—%20Understanding%20&%20Explaining%20a%20Machine%20Learning%20Algorithm/README.md).
 * **Notebook:** [Naive Bayes Classifiers](Project%2001%20—%20Understanding%20&%20Explaining%20a%20Machine%20Learning%20Algorithm/Naive%20Bayes%20Classifiers.ipynb)
 * **Tools Used:** Python, Jupyter Notebook, scikit-learn, pandas, numpy, matplotlib, seaborn.
 * **One-Line Results:** Multinomial Naive Bayes performed the best among the three models whereas Gaussian Naive Bayes performed the worst.
