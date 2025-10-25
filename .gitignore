@@ -4,3 +4,6 @@
 # Presentation files
 *.ppt
 *.pptx
+
+# .DS_Store files (macOS)
+.DS_Store
