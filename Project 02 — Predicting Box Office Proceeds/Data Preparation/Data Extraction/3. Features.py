@@ -1,3 +1,5 @@
+## This scrapper was built with the help of AI
+
 # defining the scraper
 def enrich_tmdb_details_with_imdb(
     fact,

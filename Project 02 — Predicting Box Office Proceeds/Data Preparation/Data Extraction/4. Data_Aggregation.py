@@ -1,4 +1,5 @@
-# Defining the function
+## This function was built with the help of AI
+
 def aggregate_master(df, movie_col = "Release"):
     # Importing the necessary library
     import pandas as pd
