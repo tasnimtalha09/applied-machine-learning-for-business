@@ -68,7 +68,7 @@ We also plotted the ROC curves of all three models together for a visual compari
 The ROC curves show that **Multinomial Naive Bayes** and **Bernoulli Naive Bayes** both achieved excellent discrimination ability between spam and ham messages, with AUC scores of 99.066% and 99.128% respectively. They can be considered almost equal if we account for the decimal places. In contrast, **Gaussian Naive Bayes** performed notably worse, with an AUC of 89.53%, showing that it is less effective at distinguishing between the two classes.
 
 ### Overfitting Check
-Before finally selecting on a model, we want to check whether any of the models have any overfitting issues. Usually one of the taletell signs of overfitting is **a large difference between the training and testing accuracies of a model**. If a model has a very high training accuracy but a significantly lower testing accuracy, it may be overfitting the training data.
+Before finally selecting on a model, we want to check whether any of the models have any overfitting issues. Usually one of the telltale signs of overfitting is **a large difference between the training and testing accuracies of a model**. If a model has a very high training accuracy but a significantly lower testing accuracy, it may be overfitting the training data.
 
 ```
 Train & Test Accuracy and their Differences
