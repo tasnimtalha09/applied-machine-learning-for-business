@@ -42,13 +42,13 @@ By transforming raw movie metadata into a data-driven forecasting framework, thi
 ## Data Preparation
 The dataset combines theatrical performance data, TMDB metadata, IMDb ratings, and budget information, merged on `tmdb_id`. The data preparation process:
 
-1. **Yearly Data Extraction:** Extracted 26 years of box office data (2000-2025) using `boxoffice_api`, resulting in **423,496 rows** and **10 columns**. The scraper can be found in [this python script](Data%20Preparation/Data%20Extraction/1.%20Yearly_Data.py).
+1. **Yearly Data Extraction:** Extracted 26 years of box office data (2000-2025) using `boxoffice_api`, resulting in **423,496 rows** and **10 columns**. The scraper can be found in [this python script](data_preparation/data_extraction/1_yearly_data.py).
 
-2. **TMDB ID Extraction:** Retrieved TMDB IDs for movie titles, dropping entries without valid IDs. The dataset contained **358,419 rows**. The scraper can be found in [this python script](Data%20Preparation/Data%20Extraction/2.%20TMDB_ID.py).
+2. **TMDB ID Extraction:** Retrieved TMDB IDs for movie titles, dropping entries without valid IDs. The dataset contained **358,419 rows**. The scraper can be found in [this python script](data_preparation/data_extraction/2_tmdb_id.py).
 
-3. **Feature Extraction:** Used TMDB IDs to extract genres, directors, actors, runtime, and origin countries. The scraper can be found in [this python script](Data%20Preparation/Data%20Extraction/3.%20Features.py).
+3. **Feature Extraction:** Used TMDB IDs to extract genres, directors, actors, runtime, and origin countries. The scraper can be found in [this python script](data_preparation/data_extraction/3_features.py).
 
-4. **Data Aggregation:** Aggregated data to predict **first 7 days of release** revenue and removed irrelevant columns. Which makes the final dataset a total of **6,127 rows** and **19 columns**. The aggregation script can be found in [this python script](Data%20Preparation/Data%20Extraction/4.%20Data_Aggregation.py).
+4. **Data Aggregation:** Aggregated data to predict **first 7 days of release** revenue and removed irrelevant columns. Which makes the final dataset a total of **6,127 rows** and **19 columns**. The aggregation script can be found in [this python script](data_preparation/data_extraction/4_data_aggregation.py).
 
 5. **Data Cleaning:** Handled missing values, dropped irrelevant columns, renamed features, and corrected erroneous entries.
 
