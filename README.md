@@ -48,7 +48,8 @@ In [this project](02_predicting_box_office_proceeds), we developed a production-
 * **Dataset:** 26 years of box office history (2000-2025) extracted from TMDB API, IMDb ratings, and theatrical performance data. Over **4,300 films** with **160+ engineered features** after preprocessing.
 
 * **README**: A detailed README.md file dedicated only for this project can be found [here](02_predicting_box_office_proceeds/README.md).
-* **Notebook:** The Jupyter Notebook can be found [here](02_predicting_box_office_proceeds/box_office_proceeds_prediction.ipynb).
+
+* **Notebook:** The Jupyter Notebook can be found [here](02_predicting_box_office_proceeds/box_office_prediction.ipynb).
 
 * **Tools Used:** Python, Jupyter Notebook, scikit-learn, LightGBM, XGBoost, CatBoost, Optuna, pandas, numpy, matplotlib, seaborn, SHAP, TensorFlow.
 
