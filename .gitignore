@@ -1,12 +1,5 @@
-# Video files
 *.mp4
-
-# Presentation files
 *.ppt
 *.pptx
-
-# .DS_Store files (macOS)
 .DS_Store
-
-# Project 04
-04_lead_evaluator/
+chatgpt_solution.ipynb

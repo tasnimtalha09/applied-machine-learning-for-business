@@ -228,7 +228,7 @@ The Optuna framework's intelligent search strategy discovered a configuration th
 # Model Performance
 ## Top Features
 
-**Methodology:** Both **SHAP (SHapley Additive exPlanations)** values and **native CatBoost feature importance rankings** were used to identify key revenue drivers through bar charts, beeswarm plots, and numerical importance scores.
+**Methodology:** Both **SHAP (Shapley Additive exPlanations)** values and **native CatBoost feature importance rankings** were used to identify key revenue drivers through bar charts, beeswarm plots, and numerical importance scores.
 
 ![Feature Importance](Assets/shap_whole.png)
 ***Figure 03:** Across the entire dataset, which features matter the most on average?*
@@ -236,7 +236,7 @@ The Optuna framework's intelligent search strategy discovered a configuration th
 ![SHAP Beeswarm](Assets/shap_individual.png)
 ***Figure 04:** How do individual feature values push predictions up or down across all samples?*
 
-![SHAP Beeswarm](Assets/shap_0.png)
+![SHAP Movie 01](Assets/shap_0.png)
 ***Figure 05:** For one specific movie, why did the model predict a particular value??*
 
 ### **Key Findings**

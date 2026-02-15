@@ -96,4 +96,41 @@ In [this project](03_comparing_naive_bayes_models_with_neural_network_models), w
     7. Conducted an overfitting check by comparing train-test accuracy differences.
     8. Compiled all performance metrics into a comparative table and selected the best model (1-Dimensional Convolutional Neural Network).
 
+
+
+## Project 04: Lead Evaluator
+
+In [this project](04_lead_evaluator), we built a machine learning–driven lead evaluation system for **Swan Chemical Ltd.**, a leading adhesive manufacturer. The system classifies incoming company inquiries into actionable lead buckets (Hot, Warm, Cold, Save For Later, and Reject) and generates a probability-based lead score to support sales prioritization.
+
+* **Goal:** To develop a practical, business-ready lead evaluation MVP that predicts each incoming company lead's lead bucket and produces a probability-based QualifiedScore (**P(Hot) + P(Warm)**) to guide sales follow-up decisions.
+
+* **Dataset:** A synthetic dataset created to mimic real-world lead evaluation scenarios, containing features related to company inquiries such as company size, industry, inquiry source, location, urgency, expected demand volume, purchase stage, and trust signals.
+
+* **README**: A detailed README.md file dedicated only for this project can be found [here](04_lead_evaluator/README.md).
+
+* **Notebook:** The Jupyter Notebook can be found [here](04_lead_evaluator/Lead_evaluator.ipynb).
+
+* **Scoring Script:** A separate script for production-style lead scoring can be found [here](04_lead_evaluator/scoring.py).
+
+* **Tools Used:** Python, Jupyter Notebook, scikit-learn, CatBoost, LightGBM, pandas, numpy, matplotlib, seaborn, SHAP, joblib.
+
+* **One-Line Results:** Tuned CatBoost achieved **78.15% Macro F1**, **95.63% OVR Macro AUC**, **99.16% Qualified-vs-Not AUC**, and **82.13% Hot+Warm Recall** with only **5.96% overfitting gap**, making it a reliable and deployment-ready lead scoring model.
+
+* **Workflow:**
+    1. **Data Loading & Cleaning**: Loaded the synthetic lead dataset, converted boolean columns (`has_google_listing`, `has_phone`) to binary integers, and verified data types and shape.
+    2. **Ordinal Structuring**: Established meaningful ordinal orders for `employee_estimate`, `credibility_level`, and `purchase_stage` using pandas Categorical types.
+    3. **Exploratory Data Analysis**: Conducted EDA across **six** thematic areas—Target & Scoring, Geography & Feasibility, Business Identity, Capacity & Credibility, Digital Signal, Need & Product Fit, Purchase Behavior & Urgency, and Commercial Terms & Source.
+    4. **Train-Test Split**: Performed a stratified **70:30** train-test split to preserve class distribution across all five lead buckets.
+    5. **Encoding**: Applied Ordinal Encoding for ranked features (`employee_estimate`, `credibility_level`, `purchase_stage`) and One-Hot Encoding (with `drop = "first"`) for nominal categorical features.
+    6. **Standardization**: Normalized numerical features (`distance_km`, `expected_monthly_volume_liters`, `urgency_days`, `google_review_count`) using `StandardScaler`.
+    7. **Model Training**: Trained five multi-class classification models—Multinomial Logistic Regression, Random Forest, LightGBM, CatBoost, and HistGradientBoosting.
+    8. **Model Evaluation**: Evaluated all models using Macro F1, Weighted F1, Accuracy, OVR Macro/Weighted ROC-AUC, Qualified-vs-Not ROC-AUC, and Hot + Warm Recall.
+    9. **Overfitting Check**: Compared train–test Macro F1 gaps across all models to assess generalization risk.
+    10. **Cross-Validation**: Conducted 5-fold cross-validation (Macro F1) with boxplot and heatmap visualizations to confirm performance stability across splits.
+    11. **Model Selection**: Selected CatBoost as the final model based on highest Macro F1 (78.38%), best CV Mean F1 (0.7804), highest Qualified-vs-Not AUC (99.01%), and strongest Hot+Warm Recall (81.63%).
+    12. **Hyperparameter Tuning**: Tuned CatBoost using RandomizedSearchCV (100 iterations, StratifiedKFold), reducing overfitting from 21.50% to 5.96% while improving Macro F1 to 78.15%.
+    13. **Explainability Analysis**: Conducted feature importance analysis using both CatBoost's built-in importance and SHAP values (global bar chart and individual waterfall plot), identifying `urgency_days`, `expected_monthly_volume_liters`, and `google_review_count` as the top three drivers.
+    14. **Deployment**: Saved all fitted artifacts (model, encoders, scaler, metadata) to an `artifacts/` folder and built a lightweight scoring module (`lead_evaluator.py`) with a separate testing script (`scoring.py`) for production-style lead scoring.
+
+
 </div>
