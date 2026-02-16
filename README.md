@@ -130,7 +130,7 @@ In [this project](04_lead_evaluator), we built a machine learning–driven lead 
     11. **Model Selection**: Selected CatBoost as the final model based on highest Macro F1 (78.38%), best CV Mean F1 (0.7804), highest Qualified-vs-Not AUC (99.01%), and strongest Hot+Warm Recall (81.63%).
     12. **Hyperparameter Tuning**: Tuned CatBoost using RandomizedSearchCV (100 iterations, StratifiedKFold), reducing overfitting from 21.50% to 5.96% while improving Macro F1 to 78.15%.
     13. **Explainability Analysis**: Conducted feature importance analysis using both CatBoost's built-in importance and SHAP values (global bar chart and individual waterfall plot), identifying `urgency_days`, `expected_monthly_volume_liters`, and `google_review_count` as the top three drivers.
-    14. **Deployment**: Saved all fitted artifacts (model, encoders, scaler, metadata) to an `artifacts/` folder and built a lightweight scoring module (`lead_evaluator.py`) with a separate testing script (`scoring.py`) for production-style lead scoring.
+    14. **Deployment**: Saved all fitted artifacts (model, encoders, scaler, metadata) to an `artifacts/` folder and built a lightweight scoring module (`pipeline.py`) with a separate testing script (`score_new_leads.py`) for production-style lead scoring.
 
 
 </div>

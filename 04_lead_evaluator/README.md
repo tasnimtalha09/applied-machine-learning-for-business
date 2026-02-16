@@ -2,7 +2,7 @@
 
 # Executive Summary
 
-This project develops a **Lead Evaluator** system for **Swan Chemical Ltd.** to support faster and more consistent sales prioritization in the adhesives business. The model predicts a lead’s **bucket**—Hot, Warm, Cold, Save For Later, or Reject—based on operational feasibility, commercial potential, and credibility signals. In addition to the bucket prediction, the system produces a probability-based **lead score** (**QualifiedScore = P(Hot) + P(Warm)**) and maps it to simple actions (**Prioritize**/**Nurture**/**Deprioritize**)
+This project develops a **Lead Evaluator** system for **Swan Chemical Ltd.** to support faster and more consistent sales prioritization in the adhesives business. The model predicts a lead's **bucket**—Hot, Warm, Cold, Save For Later, or Reject—based on operational feasibility, commercial potential, and credibility signals. In addition to the bucket prediction, the system produces a probability-based **lead score** (**QualifiedScore = P(Hot) + P(Warm)**) and maps it to simple actions (**Prioritize**/**Nurture**/**Deprioritize**)
 for practical business use.
 
 Multiple multi-class models were trained and compared, including **Multinomial Logistic Regression**, **Random Forest**, **LightGBM**, **HistGradientBoosting**, and **CatBoost**. Model performance was evaluated using multi-class-appropriate metrics such as **Macro F1**,
@@ -10,9 +10,9 @@ cross-validation stability, and ROC-AUC (OVR and Qualified-vs-Not). After compar
 
 **The tuned CatBoost model achieved:**
 
-* **Macro F1 (Test):** 78.15%
-* **OVR Macro AUC:** 95.63%
-* **Overfitting:** Train–Test Macro F1 gap reduced to **5.96%** after tuning
+* **Macro F1 (Test):** 78.57%
+* **OVR Macro AUC:** 95.62%
+* **Overfitting:** Train–Test Macro F1 gap reduced to **4.22%** after tuning, indicating good generalization.
 
 Explainability was supported through **feature importance** and **SHAP** analysis, showing that the model is primarily driven by high-signal business variables such as **urgency**, **expected monthly volume**, and **credibility indicators** (e.g., Google review count), aligning well with real-world sales logic.
 
@@ -96,25 +96,26 @@ A summary of model performance of the **five** models is presented below:
 | 4 | Logistic Regression | 71.65% | 72.95% | 73.33% | 7.81% | 0.7095 | 0.0104 | 93.46% | 92.85% | 98.87% | 72.45% |
 | 5 | Random Forest | 69.06% | 73.22% | 75.44% | 8.17% | 0.6570 | 0.0231 | 94.51% | 93.83% | 98.85% | 73.47% |
 
+
 # Final Model Tuning & Selection
 
-The CatBoost model was tuned using **RandomizedSearchCV** to improve performance and reduce overfitting.
+The CatBoost model was tuned using **Optuna TPE (Bayesian Optimization)** to improve performance and reduce overfitting.
 
-## Best Parameters (RandomizedSearchCV)
+## Best Parameters (Optuna TPE)
 
 The final tuned model used the following best parameters:
 * `depth = 5`
 * `learning_rate = 0.01`
-* `iterations = 1500`
+* `iterations = 1000`
 * `l2_leaf_reg = 8`
 * `subsample = 0.7`
 * `rsm = 0.7`
-* `random_strength = 1`
-* `border_count = 255`
+* `random_strength = 0`
+* `border_count = 128`
 
 ### Key Takeaways
 
-* Best cross-validation Macro F1 during search: **0.7851**
+* Best cross-validation Macro F1 during search: **0.7835**
 * Overfitting reduced substantially compared to baseline CatBoost
 * Final tuned model showed strong balance across all lead buckets
 
@@ -124,24 +125,24 @@ The final tuned model used the following best parameters:
 ***Table 02:** Tuned CatBoost Model Performance Summary.*
 | **Metric** | **Test/CV Performance** |
 |------------|----------------------------|
-| ***Macro F1 (Test)*** | **78.15%** |
-| ***Macro F1 (Train)*** | **84.10%** |
-| ***Cross-Validation Macro F1 (Mean ± Std)*** | **0.7772 ± 0.0247** |
-| ***OVR ROC-AUC (Macro)*** | **95.63%** |
-| ***OVR ROC-AUC (Weighted)*** | **95.13%** |
-| ***Qualified-vs-Not ROC-AUC*** | **99.16%** |
+| ***Macro F1 (Test)*** | **78.57%** |
+| ***Macro F1 (Train)*** | **82.79%** |
+| ***Cross-Validation Macro F1 (Mean ± Std)*** | **0.7835 ± 0.0093** |
+| ***OVR ROC-AUC (Macro)*** | **95.62%** |
+| ***OVR ROC-AUC (Weighted)*** | **95.10%** |
+| ***Qualified-vs-Not ROC-AUC*** | **99.12%** |
 | ***Overall Accuracy (Test)*** | **79.00%** |
-| ***Hot + Warm Recall (Test)*** | **82.13%** |
-| ***Train–Test Macro F1 Difference (Overfitting*)*** | **5.96%** |
+| ***Hot + Warm Recall (Test)*** | **80.95%** |
+| ***Train–Test Macro F1 Difference (Overfitting*)*** | **4.22%** |
 | ***Overfitting Status*** | **Good** |
-| ***Best Tuned Parameters (RandomizedSearchCV)*** | `depth = 5`, `lr = 0.01`, `iters = 1500`, `l2 = 8`, `subsample = 0.7`, `rsm = 0.7` |
+| ***Best Tuned Parameters (Optuna TPE)*** | `depth = 5`, `lr = 0.01`, `iters = 1000`, `l2 = 8`, `subsample = 0.7`, `rsm = 0.7`, `border_count = 128`, `random_strength = 0` |
 
 ***Overfitting criteria (based on Train–Test Macro F1 gap):** Good (<10%), Moderate (10–20%), High (>20%)
 
 ### Key Insights
 
 * The tuned CatBoost model delivers strong balanced classification performance across all five buckets, validated by Macro F1.
-* Overfitting is low (5.96% gap), indicating solid generalization to unseen lead profiles.
+* Overfitting is low (4.22% gap), indicating solid generalization to unseen lead profiles.
 * High AUC values confirm strong ranking ability, especially for the core business triage decision: identifying qualified opportunities (Hot/Warm).
 
 ## Top Features
@@ -176,8 +177,8 @@ Lead qualification in this model is fundamentally **urgency-led** and **value-sh
 The **`lead_evaluator.ipynb`** notebook serves as the development environment for cleaning, training, evaluation, and tuning. For business-side usage, the model is deployed through saved artifacts and lightweight scripts:
 
 1.  All fitted components (CatBoost model, encoders, scaler, metadata) are saved into the [**`artifacts`**](./artifacts/) folder.
-2.  A production module [**`lead_evaluator.py`**](./lead_evaluator.py) loads these artifacts and exposes a clean `predict_leads()` function.
-3.  A runner script [**`scoring.py`**](./scoring.py) reads a CSV of new leads and outputs:
+2.  A production module [**`pipeline.py`**](./pipeline.py) loads these artifacts and exposes a clean `predict_leads()` function.
+3.  A runner script [**`score_new_leads.py`**](./score_new_leads.py) reads a CSV of new leads and outputs:
     * Predicted lead bucket
     * Probability-based lead score (QualifiedScore)
     * Recommended action (Prioritize / Nurture / Deprioritize)
