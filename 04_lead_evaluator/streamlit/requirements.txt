@@ -1,0 +1,8 @@
+streamlit
+pandas
+numpy
+joblib
+catboost
+openpyxl
+matplotlib
+scikit-learn==1.8.0
