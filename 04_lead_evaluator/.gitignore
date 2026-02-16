@@ -9,3 +9,4 @@ artifacts/__pycache__/
 .ipynb_checkpoints/
 saved_leads.csv
 web/
+web/**
