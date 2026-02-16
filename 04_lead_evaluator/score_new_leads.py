@@ -67,7 +67,7 @@ def main() -> None:
     if "Actual Lead Bucket" in out.columns:
         out.insert(
             loc = out.columns.get_loc("Predicted Lead Bucket") + 1,
-            column = "Bucket Match",
+            column = "Status",
             value = np.where(
                 out["Actual Lead Bucket"] == out["Predicted Lead Bucket"],
                 "Match",

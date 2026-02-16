@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Evaluator — Swan Chemical</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body class="light-mode">
+
+<!-- ===== TOP BAR ===== -->
+<header class="top-bar">
+    <div class="top-bar-inner">
+        <h1 class="logo">Lead Evaluator</h1>
+        <div class="top-bar-actions">
+            <button id="darkModeToggle" class="btn-icon" title="Toggle dark mode">
+                <span id="themeIcon">☀️</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+
+<!-- ===== FILE UPLOAD ===== -->
+<section class="card" id="uploadSection">
+    <h2>Upload File</h2>
+    <p class="subtitle">Upload a .csv or .xlsx file to auto-fill the form or evaluate multiple leads at once.</p>
+    <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Choose File</button>
+        <span id="fileName" class="file-name">No file selected</span>
+    </div>
+    <div id="uploadWarning" class="warning hidden"></div>
+</section>
+
+<!-- ===== MANUAL INPUT FORM ===== -->
+<section class="card" id="formSection">
+    <h2>Lead Details</h2>
+    <p class="subtitle">Fill in the lead information manually, or upload a file above to auto-fill.</p>
+    <form id="leadForm" class="lead-form">
+        <div class="form-grid" id="formGrid">
+            <!-- Populated by JS -->
+        </div>
+    </form>
+    <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="evaluateBtn" onclick="evaluate()">
+            <span id="evalText">Evaluate Lead</span>
+            <span id="evalSpinner" class="spinner hidden"></span>
+        </button>
+        <button type="button" class="btn btn-outline" onclick="clearForm()">Clear</button>
+    </div>
+    <div id="formError" class="error hidden"></div>
+</section>
+
+<!-- ===== RESULTS SECTION ===== -->
+<section class="card hidden" id="resultsSection">
+    <!-- Content injected dynamically -->
+</section>
+
+</main>
+
+<!-- ===== SAVE MODAL ===== -->
+<div class="modal-overlay hidden" id="saveModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Save Lead</h3>
+            <button class="btn-icon" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Populated by JS -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="confirmSaveBtn" onclick="confirmSave()">Confirm Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast hidden" id="toast"></div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+const INPUT_COLUMNS = {{ columns | tojson }};
+const DROPDOWN_OPTIONS = {{ dropdown_options | tojson }};
+const NUMERIC_FIELDS = new Set({{ numeric_fields | tojson }});
+const BOOLEAN_FIELDS = new Set({{ boolean_fields | tojson }});
+
+const BUCKET_COLORS = {
+    "Hot":            "#1E7F3F",
+    "Warm":           "#6DBE45",
+    "Save For Later": "#F4C430",
+    "Cold":           "#F28B82",
+    "Reject":         "#B00020",
+};
+
+let currentResults = null;   // array of result dicts
+let savingIndex = null;      // which company we're saving
+
+// ---------------------------------------------------------------------------
+// Dark mode toggle
+// ---------------------------------------------------------------------------
+document.getElementById('darkModeToggle').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    document.body.classList.toggle('light-mode');
+    const icon = document.getElementById('themeIcon');
+    icon.textContent = document.body.classList.contains('dark-mode') ? '🌙' : '☀️';
+});
+
+// ---------------------------------------------------------------------------
+// Build form
+// ---------------------------------------------------------------------------
+function buildForm() {
+    const grid = document.getElementById('formGrid');
+    grid.innerHTML = '';
+    INPUT_COLUMNS.forEach(col => {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        const label = document.createElement('label');
+        label.textContent = prettify(col);
+        label.setAttribute('for', 'field_' + col);
+        div.appendChild(label);
+
+        let input;
+        if (DROPDOWN_OPTIONS[col]) {
+            input = document.createElement('select');
+            input.id = 'field_' + col;
+            input.name = col;
+            const blank = document.createElement('option');
+            blank.value = '';
+            blank.textContent = '— Select —';
+            input.appendChild(blank);
+            DROPDOWN_OPTIONS[col].forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                input.appendChild(o);
+            });
+        } else if (NUMERIC_FIELDS.has(col)) {
+            input = document.createElement('input');
+            input.type = 'number';
+            input.step = 'any';
+            input.min = '0';
+            input.id = 'field_' + col;
+            input.name = col;
+            input.placeholder = prettify(col);
+        } else {
+            // text (company_name)
+            input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'field_' + col;
+            input.name = col;
+            input.placeholder = prettify(col);
+        }
+        div.appendChild(input);
+        grid.appendChild(div);
+    });
+}
+
+function prettify(col) {
+    return col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function getFormData() {
+    const data = {};
+    INPUT_COLUMNS.forEach(col => {
+        const el = document.getElementById('field_' + col);
+        if (!el) return;
+        data[col] = el.value;
+    });
+    return data;
+}
+
+function setFormData(record) {
+    INPUT_COLUMNS.forEach(col => {
+        const el = document.getElementById('field_' + col);
+        if (!el) return;
+        const val = record[col];
+        if (val !== undefined && val !== null) {
+            el.value = String(val);
+        }
+    });
+}
+
+function clearForm() {
+    INPUT_COLUMNS.forEach(col => {
+        const el = document.getElementById('field_' + col);
+        if (el) el.value = '';
+    });
+    document.getElementById('resultsSection').classList.add('hidden');
+    document.getElementById('formError').classList.add('hidden');
+    currentResults = null;
+}
+
+// ---------------------------------------------------------------------------
+// File upload
+// ---------------------------------------------------------------------------
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('uploadWarning').classList.add('hidden');
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    try {
+        const resp = await fetch('/api/upload', {method: 'POST', body: fd});
+        const data = await resp.json();
+        if (!resp.ok) {
+            showWarning(data.error || 'Upload failed');
+            return;
+        }
+
+        if (data.missing_columns && data.missing_columns.length > 0) {
+            showWarning('Missing columns in file: ' + data.missing_columns.join(', '));
+        }
+
+        if (data.records.length === 1) {
+            // Single company — fill form
+            setFormData(data.records[0]);
+        } else if (data.records.length > 1) {
+            // Multi company — go straight to evaluation
+            evaluateMultiple(data.records);
+        }
+    } catch (err) {
+        showWarning('Upload error: ' + err.message);
+    }
+});
+
+function showWarning(msg) {
+    const el = document.getElementById('uploadWarning');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+}
+
+// ---------------------------------------------------------------------------
+// Evaluate
+// ---------------------------------------------------------------------------
+async function evaluate() {
+    const data = getFormData();
+
+    // Basic validation
+    if (!data.company_name || data.company_name.trim() === '') {
+        showError('Company Name is required.');
+        return;
+    }
+
+    document.getElementById('formError').classList.add('hidden');
+    setLoading(true);
+
+    try {
+        const resp = await fetch('/api/evaluate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({companies: [data]}),
+        });
+        const result = await resp.json();
+        if (!resp.ok) {
+            showError(result.error || 'Evaluation failed.');
+            return;
+        }
+        currentResults = result.results;
+        renderSingleResult(currentResults[0]);
+    } catch (err) {
+        showError('Error: ' + err.message);
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function evaluateMultiple(records) {
+    setLoading(true);
+    document.getElementById('formError').classList.add('hidden');
+
+    try {
+        const resp = await fetch('/api/evaluate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({companies: records}),
+        });
+        const result = await resp.json();
+        if (!resp.ok) {
+            showError(result.error || 'Evaluation failed.');
+            return;
+        }
+        currentResults = result.results;
+        renderMultiResults(currentResults);
+    } catch (err) {
+        showError('Error: ' + err.message);
+    } finally {
+        setLoading(false);
+    }
+}
+
+function setLoading(on) {
+    document.getElementById('evalText').classList.toggle('hidden', on);
+    document.getElementById('evalSpinner').classList.toggle('hidden', !on);
+    document.getElementById('evaluateBtn').disabled = on;
+}
+
+function showError(msg) {
+    const el = document.getElementById('formError');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+}
+
+// ---------------------------------------------------------------------------
+// Render — Single company result
+// ---------------------------------------------------------------------------
+function renderSingleResult(r) {
+    const sec = document.getElementById('resultsSection');
+    sec.classList.remove('hidden');
+    sec.innerHTML = buildSingleHTML(r, true);
+    drawWaterfall('shapChart0', r.shap);
+    sec.scrollIntoView({behavior: 'smooth'});
+}
+
+function buildSingleHTML(r, showSaveBtn) {
+    const color = r.bucket_color || BUCKET_COLORS[r.pred_bucket] || '#888';
+    let html = `
+    <div class="result-header">
+        <div class="result-bucket" style="color:${color}; border-color:${color}">
+            ${r.pred_bucket}
+        </div>
+        <div class="result-score">Lead Score: <strong>${r.lead_score}</strong></div>
+        <div class="result-action">${r.action}</div>
+    </div>
+    <h3>Feature Impact</h3>
+    <div class="chart-container"><canvas id="shapChart0"></canvas></div>
+    <h3>Input Details</h3>
+    <div class="detail-grid">`;
+
+    INPUT_COLUMNS.forEach(col => {
+        const val = r[col] !== undefined && r[col] !== null ? r[col] : '—';
+        html += `<div class="detail-item"><span class="detail-label">${prettify(col)}</span><span class="detail-value">${val}</span></div>`;
+    });
+
+    html += `</div>`;
+    if (showSaveBtn) {
+        html += `<div class="form-actions"><button class="btn btn-primary" onclick="openSaveModal(0)">Save Lead</button></div>`;
+    }
+    return html;
+}
+
+// ---------------------------------------------------------------------------
+// Render — Multi company results
+// ---------------------------------------------------------------------------
+function renderMultiResults(results) {
+    const sec = document.getElementById('resultsSection');
+    sec.classList.remove('hidden');
+
+    // Count buckets
+    const bucketCounts = {};
+    results.forEach(r => {
+        bucketCounts[r.pred_bucket] = (bucketCounts[r.pred_bucket] || 0) + 1;
+    });
+    const total = results.length;
+
+    let html = `
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('summary')">Summary Dashboard</button>
+        <button class="tab" onclick="switchTab('individual')">Individual Results</button>
+    </div>
+
+    <!-- SUMMARY TAB -->
+    <div id="tabSummary" class="tab-content">
+        <h2>Lead Evaluation Summary</h2>
+        <div class="summary-stats">
+            <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">Total Leads</div></div>`;
+
+    ['Hot', 'Warm', 'Save For Later', 'Cold', 'Reject'].forEach(b => {
+        const cnt = bucketCounts[b] || 0;
+        const pct = total > 0 ? ((cnt / total) * 100).toFixed(1) : 0;
+        const color = BUCKET_COLORS[b];
+        html += `<div class="stat-card" style="border-left:4px solid ${color}"><div class="stat-number" style="color:${color}">${pct}%</div><div class="stat-label">${b} (${cnt})</div></div>`;
+    });
+
+    html += `</div>
+        <div class="chart-container donut-container"><canvas id="donutChart"></canvas></div>
+    </div>
+
+    <!-- INDIVIDUAL TAB -->
+    <div id="tabIndividual" class="tab-content hidden">
+        <div class="table-header-actions">
+            <h2>Individual Results</h2>
+            <button class="btn btn-outline btn-sm" onclick="downloadResults()">Download CSV</button>
+        </div>
+        <div class="table-wrapper">
+        <table class="results-table">
+            <thead><tr>
+                <th>#</th><th>Company Name</th><th>Predicted Bucket</th><th>Lead Score</th><th>Action</th><th></th>
+            </tr></thead><tbody>`;
+
+    results.forEach((r, i) => {
+        const color = r.bucket_color || BUCKET_COLORS[r.pred_bucket] || '#888';
+        html += `<tr>
+            <td>${i + 1}</td>
+            <td>${r.company_name}</td>
+            <td><span class="badge" style="background:${color}">${r.pred_bucket}</span></td>
+            <td>${r.lead_score}</td>
+            <td>${r.action}</td>
+            <td>
+                <button class="btn btn-sm btn-outline" onclick="showDetail(${i})">View</button>
+                <button class="btn btn-sm btn-primary" onclick="openSaveModal(${i})">Save</button>
+            </td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div>
+
+        <!-- Detail panel (initially hidden) -->
+        <div id="detailPanel" class="hidden card" style="margin-top:1.5rem;"></div>
+    </div>`;
+
+    sec.innerHTML = html;
+    sec.scrollIntoView({behavior: 'smooth'});
+
+    // Draw donut chart
+    drawDonut(bucketCounts, results);
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    if (tab === 'summary') {
+        document.getElementById('tabSummary').classList.remove('hidden');
+        document.getElementById('tabIndividual').classList.add('hidden');
+        document.querySelectorAll('.tab')[0].classList.add('active');
+    } else {
+        document.getElementById('tabSummary').classList.add('hidden');
+        document.getElementById('tabIndividual').classList.remove('hidden');
+        document.querySelectorAll('.tab')[1].classList.add('active');
+    }
+}
+
+function showDetail(idx) {
+    const r = currentResults[idx];
+    const panel = document.getElementById('detailPanel');
+    panel.classList.remove('hidden');
+
+    const canvasId = 'shapChartDetail';
+    panel.innerHTML = buildSingleHTML(r, false).replace('shapChart0', canvasId);
+    panel.innerHTML += `<div class="form-actions"><button class="btn btn-primary" onclick="openSaveModal(${idx})">Save Lead</button></div>`;
+    drawWaterfall(canvasId, r.shap);
+    panel.scrollIntoView({behavior: 'smooth'});
+}
+
+// ---------------------------------------------------------------------------
+// Charts
+// ---------------------------------------------------------------------------
+function drawWaterfall(canvasId, shapData) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const features = shapData.features;
+    const base = shapData.base_value;
+
+    // Sort by absolute value descending (already sorted from backend)
+    const labels = features.map(f => f.name.replace(/_/g, ' '));
+    const values = features.map(f => f.value);
+    const colors = values.map(v => v >= 0 ? 'rgba(220, 76, 62, 0.8)' : 'rgba(66, 133, 244, 0.8)');
+    const borderColors = values.map(v => v >= 0 ? '#dc4c3e' : '#4285f4');
+
+    // Reverse for horizontal bar (bottom to top)
+    labels.reverse();
+    values.reverse();
+    colors.reverse();
+    borderColors.reverse();
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderColor: borderColors,
+                borderWidth: 1,
+                barThickness: 22,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {display: false},
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const v = ctx.parsed.x;
+                            return (v >= 0 ? '+' : '') + v.toFixed(4) + ' (pushes score ' + (v >= 0 ? 'up' : 'down') + ')';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {display: true, text: 'SHAP Value (impact on lead score)', font: {weight: '500'}},
+                    grid: {color: 'rgba(0,0,0,0.06)'},
+                },
+                y: {
+                    grid: {display: false},
+                    ticks: {font: {size: 12}},
+                }
+            }
+        }
+    });
+}
+
+function drawDonut(bucketCounts, results) {
+    const canvas = document.getElementById('donutChart');
+    if (!canvas) return;
+
+    const orderedBuckets = ['Hot', 'Warm', 'Save For Later', 'Cold', 'Reject'];
+    const data = orderedBuckets.map(b => bucketCounts[b] || 0);
+    const bgColors = orderedBuckets.map(b => BUCKET_COLORS[b]);
+
+    // Build company-name lists per bucket for tooltip
+    const bucketCompanies = {};
+    orderedBuckets.forEach(b => { bucketCompanies[b] = []; });
+    results.forEach(r => {
+        if (bucketCompanies[r.pred_bucket]) {
+            bucketCompanies[r.pred_bucket].push(r.company_name);
+        }
+    });
+
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: orderedBuckets,
+            datasets: [{
+                data: data,
+                backgroundColor: bgColors,
+                borderWidth: 2,
+                borderColor: '#fff',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {font: {size: 13, family: 'Inter'}, padding: 16}
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody: (items) => {
+                            const idx = items[0].dataIndex;
+                            const bucket = orderedBuckets[idx];
+                            const companies = bucketCompanies[bucket];
+                            if (companies.length <= 5) return companies.join('\n');
+                            return companies.slice(0, 5).join('\n') + '\n... +' + (companies.length - 5) + ' more';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Save modal
+// ---------------------------------------------------------------------------
+function openSaveModal(idx) {
+    savingIndex = idx;
+    const r = currentResults[idx];
+    const body = document.getElementById('modalBody');
+    let html = '<div class="modal-grid">';
+
+    // All input columns + pred_bucket + lead_score
+    const allCols = [...INPUT_COLUMNS, 'pred_bucket', 'lead_score'];
+    allCols.forEach(col => {
+        const val = r[col] !== undefined && r[col] !== null ? r[col] : '';
+        html += `<div class="form-group">
+            <label for="save_${col}">${prettify(col)}</label>`;
+
+        if (col === 'pred_bucket') {
+            html += `<select id="save_${col}" name="${col}">`;
+            ['Hot', 'Warm', 'Save For Later', 'Cold', 'Reject'].forEach(opt => {
+                html += `<option value="${opt}" ${opt === val ? 'selected' : ''}>${opt}</option>`;
+            });
+            html += '</select>';
+        } else if (DROPDOWN_OPTIONS[col]) {
+            html += `<select id="save_${col}" name="${col}">`;
+            html += `<option value="">— Select —</option>`;
+            DROPDOWN_OPTIONS[col].forEach(opt => {
+                html += `<option value="${opt}" ${String(opt) === String(val) ? 'selected' : ''}>${opt}</option>`;
+            });
+            html += '</select>';
+        } else if (col === 'lead_score' || NUMERIC_FIELDS.has(col)) {
+            html += `<input type="number" step="any" id="save_${col}" name="${col}" value="${val}">`;
+        } else {
+            html += `<input type="text" id="save_${col}" name="${col}" value="${val}">`;
+        }
+        html += '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+
+    document.getElementById('saveModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('saveModal').classList.add('hidden');
+}
+
+async function confirmSave() {
+    const allCols = [...INPUT_COLUMNS, 'pred_bucket', 'lead_score'];
+    const lead = {};
+    allCols.forEach(col => {
+        const el = document.getElementById('save_' + col);
+        if (el) lead[col] = el.value;
+    });
+
+    try {
+        const resp = await fetch('/api/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({lead}),
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showToast('Lead saved successfully!');
+            closeModal();
+        } else {
+            showToast('Error: ' + (result.error || 'Unknown'), true);
+        }
+    } catch (err) {
+        showToast('Error saving: ' + err.message, true);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Download CSV
+// ---------------------------------------------------------------------------
+async function downloadResults() {
+    if (!currentResults) return;
+    try {
+        const resp = await fetch('/api/download-results', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({results: currentResults}),
+        });
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'evaluated_leads.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        showToast('Download failed: ' + err.message, true);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Toast notification
+// ---------------------------------------------------------------------------
+function showToast(msg, isError) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast' + (isError ? ' toast-error' : '');
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+}
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+buildForm();
+</script>
+</body>
+</html>

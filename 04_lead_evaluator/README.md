@@ -96,6 +96,7 @@ A summary of model performance of the **five** models is presented below:
 | 4 | Logistic Regression | 71.65% | 72.95% | 73.33% | 7.81% | 0.7095 | 0.0104 | 93.46% | 92.85% | 98.87% | 72.45% |
 | 5 | Random Forest | 69.06% | 73.22% | 75.44% | 8.17% | 0.6570 | 0.0231 | 94.51% | 93.83% | 98.85% | 73.47% |
 
+The CatBoost model outperformed the others in Macro F1, AUC metrics, and had a reasonable overfitting gap. It also showed strong cross-validation stability, making it the best candidate for final tuning and deployment. Further hyperparameter tuning was performed on CatBoost to improve performance and reduce overfitting.
 
 # Final Model Tuning & Selection
 
@@ -149,10 +150,10 @@ The final tuned model used the following best parameters:
 
 **Methodology:** Both **SHAP (Shapley Additive exPlanations)** values and **native CatBoost feature importance rankings** were used to identify key revenue drivers through bar charts, beeswarm plots, and numerical importance scores.
 
-![Feature Importance](assets/shap_whole.png)
+![Feature Importance](assets/shap_01.png)
 ***Figure 01:** Across the entire dataset, which features matter the most on average?*
 
-![SHAP Beeswarm](assets/shap_01.png)
+![Individual Result](assets/shap_02.png)
 ***Figure 02:** For one specific company, why did the model predict a particular value??*
 
 ### Key Findings

@@ -1,4 +1,5 @@
 *.mp4
 *.ppt
 .DS_Store
-chatgpt_solution.ipynb
+_pyacache_/
+__pycache__/
