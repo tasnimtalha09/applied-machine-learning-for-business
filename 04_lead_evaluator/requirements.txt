@@ -1,7 +1,0 @@
-streamlit
-pandas
-numpy
-joblib
-catboost
-openpyxl
-matplotlib
