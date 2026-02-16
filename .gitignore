@@ -1,6 +1,0 @@
-*.mp4
-*.ppt
-.DS_Store
-_pyacache_/
-__pycache__/
-web/
