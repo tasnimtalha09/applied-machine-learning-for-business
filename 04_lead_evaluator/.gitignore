@@ -10,3 +10,4 @@ artifacts/__pycache__/
 saved_leads.csv
 web/
 web/**
+presentation(s)/**
