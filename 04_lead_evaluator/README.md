@@ -105,14 +105,15 @@ The CatBoost model was tuned using **Optuna TPE (Bayesian Optimization)** to imp
 ## Best Parameters (Optuna TPE)
 
 The final tuned model used the following best parameters:
-* `depth = 5`
-* `learning_rate = 0.01`
+
 * `iterations = 1000`
-* `l2_leaf_reg = 8`
-* `subsample = 0.7`
-* `rsm = 0.7`
-* `random_strength = 0`
-* `border_count = 128`
+* `learning_rate = 0.015`
+* `depth = 5`
+* `l2_leaf_reg = 15`
+* `subsample = 0.6`
+* `rsm = 0.85`
+* `border_count = 255`
+* `random_strength = 2`
 
 ### Key Takeaways
 
@@ -136,7 +137,7 @@ The final tuned model used the following best parameters:
 | ***Hot + Warm Recall (Test)*** | **80.95%** |
 | ***Train–Test Macro F1 Difference (Overfitting*)*** | **4.22%** |
 | ***Overfitting Status*** | **Good** |
-| ***Best Tuned Parameters (Optuna TPE)*** | `depth = 5`, `lr = 0.01`, `iters = 1000`, `l2 = 8`, `subsample = 0.7`, `rsm = 0.7`, `border_count = 128`, `random_strength = 0` |
+| ***Best Tuned Parameters (Optuna TPE)*** | `depth = 5`, `lr = 0.015`, `iters = 1000`, `l2 = 15`, `subsample = 0.6`, `rsm = 0.85`, `border_count = 255`, `random_strength = 2` |
 
 ***Overfitting criteria (based on Train–Test Macro F1 gap):** Good (<10%), Moderate (10–20%), High (>20%)
 
